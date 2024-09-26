@@ -19,4 +19,3 @@ class Agente:
         pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(
             self.pos_x * self.cell_size, self.pos_y * self.cell_size, 
             self.cell_size, self.cell_size
-        ))

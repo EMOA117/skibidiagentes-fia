@@ -10,4 +10,3 @@ class FileSelector:
             filetypes=[("Archivos de texto", "*.txt"), ("Archivos CSV", "*.csv")]
         )
         root.destroy()  # Destruye la ventana después de seleccionar el archivo
-        return archivo
