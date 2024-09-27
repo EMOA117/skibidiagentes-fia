@@ -98,12 +98,16 @@ def ejecutar_juego(mapa):
                 if not modo_edicion:
                     if event.key == pygame.K_UP:
                         agente.mover(0, -1)
+                        agente.sensor()  # Llamar al sensor
                     elif event.key == pygame.K_DOWN:
                         agente.mover(0, 1)
+                        agente.sensor()  # Llamar al sensor
                     elif event.key == pygame.K_LEFT:
                         agente.mover(-1, 0)
+                        agente.sensor()  # Llamar al sensor
                     elif event.key == pygame.K_RIGHT:
                         agente.mover(1, 0)
+                        agente.sensor()  # Llamar al sensor
 
             elif event.type == pygame.MOUSEBUTTONDOWN and modo_edicion:
                 # Detectar la celda donde se hizo clic en modo edición
