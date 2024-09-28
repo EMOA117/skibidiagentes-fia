@@ -2,6 +2,7 @@ import pygame
 from map_loader import MapLoader
 from file_selector import FileSelector
 from agente import Agente
+from guardar_mapa import guardar_mapa_archivo
 
 # Colores y tipos de terreno
 terrenos = {
@@ -43,6 +44,16 @@ def mostrar_sidebar(screen, font, modo_edicion, terreno_seleccionado, sidebar_wi
     for i, texto in enumerate(instrucciones):
         label = font.render(texto, True, (255, 255, 255))
         screen.blit(label, (screen.get_width() - sidebar_width + 10, 10 + i * 20))
+
+    #Boton para guardar el mapa 
+    boton_guardar = pygame.Rect(screen.get_width() - sidebar_width + 50, 150, 200, 40)
+    pygame.draw.rect(screen, (100, 100, 255), boton_guardar) 
+
+    #Texto en el boton  
+    label_boton_guardar = font.render("Guardar", True, (255, 255, 255))
+    screen.blit(label_boton_guardar, (boton_guardar.x + 50, boton_guardar.y + 10))
+    
+    return boton_guardar
 
 # Función principal que ejecuta el juego
 def ejecutar_juego(mapa):
@@ -109,10 +120,16 @@ def ejecutar_juego(mapa):
                         agente.mover(1, 0)
                         agente.sensor()  # Llamar al sensor
 
-            elif event.type == pygame.MOUSEBUTTONDOWN and modo_edicion:
-                # Detectar la celda donde se hizo clic en modo edición
-                celda_x, celda_y = detectar_celda(pygame.mouse.get_pos(), cell_size)
-                if 0 <= celda_x < num_columnas and 0 <= celda_y < num_filas:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                # Detectar clic en el boton de guardar (se guarda en un csv)
+                if modo_edicion and boton_guardar.collidepoint(mouse_pos):
+                    guardar_mapa_archivo(mapa, "mapa_guardado.csv")
+                    print("Mapa guardado")
+                #Detectar celda en modo edicion     
+                elif modo_edicion:          
+                 celda_x, celda_y = detectar_celda(mouse_pos, cell_size)
+                 if 0 <= celda_x < num_columnas and 0 <= celda_y < num_filas:
                     # Cambiar el terreno de la celda clicada
                     mapa[celda_y][celda_x] = terreno_seleccionado
 
@@ -123,7 +140,7 @@ def ejecutar_juego(mapa):
             agente.dibujar(screen)
 
         # Mostrar el sidebar con instrucciones
-        mostrar_sidebar(screen, font, modo_edicion, terreno_seleccionado, sidebar_width, window_height)
+        boton_guardar = mostrar_sidebar(screen, font, modo_edicion, terreno_seleccionado, sidebar_width, window_height)
 
         pygame.display.flip()
         clock.tick(10)  # Controlar la velocidad del bucle
