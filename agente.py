@@ -19,3 +19,22 @@ class Agente:
         pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(
             self.pos_x * self.cell_size, self.pos_y * self.cell_size, 
             self.cell_size, self.cell_size
+        ))
+
+    def sensor(self):
+        alrededor = {}
+        posiciones = {
+            'arriba': (self.pos_x, self.pos_y - 1),
+            'abajo': (self.pos_x, self.pos_y + 1),
+            'izquierda': (self.pos_x - 1, self.pos_y),
+            'derecha': (self.pos_x + 1, self.pos_y)
+        }
+        for direccion, (x, y) in posiciones.items():
+            if 0 <= x < len(self.mapa[0]) and 0 <= y < len(self.mapa):
+                alrededor[direccion] = self.mapa[y][x]  
+            else:
+                alrededor[direccion] = None  
+        
+        print("Casillas alrededor del agente:", alrededor)
+
+        return alrededor

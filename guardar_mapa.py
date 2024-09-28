@@ -1,4 +1,3 @@
-
 def guardar_mapa_archivo(mapa, nombre_archivo):
 
     with open(nombre_archivo, 'w') as archivo:
