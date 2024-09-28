@@ -1,14 +1,17 @@
 import pygame
 
+from constantes import COSTOS_MOVIMIENTO, TERRENOS
+
 class Agente:
-    def __init__(self, pos_x, pos_y, cell_size, mapa_original):
+    def __init__(self, pos_x, pos_y, cell_size, mapa_original, tipo_agente="human"):
         """
         Inicializa el agente.
         """
         self.pos_x = pos_x
         self.pos_y = pos_y
         self.cell_size = cell_size
-        self.mapa_original = mapa_original  # Mantener referencia al mapa original
+        self.tipo_agente = tipo_agente
+        self.mapa_original = mapa_original
         
         # Inicializar conocimiento del mapa
         self.conocimiento = [[{"visibilidad": 0, "recorrido": set()} for _ in fila] for fila in mapa_original]
@@ -21,9 +24,14 @@ class Agente:
             'izquierda': None,
             'derecha': None
         }
-        # Inicializa los sensores en la posición inicial
         self.sensar()
 
+    def costo_movimiento(self, tipo_terreno):
+        """
+        Devuelve el costo de movimiento para el tipo de terreno actual.
+        """
+        return COSTOS_MOVIMIENTO[self.tipo_agente].get(tipo_terreno, None)
+    
     def mover(self, dx, dy):
         """
         Mueve el agente a una nueva posición si es válida.
@@ -36,12 +44,14 @@ class Agente:
         """
         # Verificar que la nueva posición esté dentro del mapa y sea transitable
         if 0 <= nueva_x < len(self.mapa_original[0]) and 0 <= nueva_y < len(self.mapa_original):
-            self.pos_x = nueva_x
-            self.pos_y = nueva_y
-            # Actualizar sensores y conocimiento al moverse
-            self.sensar()
-            self.conocimiento[self.pos_y][self.pos_x]["visibilidad"] = 1
-            self.conocimiento[self.pos_y][self.pos_x]["recorrido"].add("Visitado")
+            tipo_terreno = TERRENOS[self.mapa_original[nueva_y][nueva_x]]
+            costo = self.costo_movimiento(tipo_terreno)
+            if costo is not None:  # Si el terreno es transitable para este agente
+                self.pos_x = nueva_x
+                self.pos_y = nueva_y
+                self.sensar()
+                self.conocimiento[self.pos_y][self.pos_x]["visibilidad"] = 1
+                self.conocimiento[self.pos_y][self.pos_x]["recorrido"].add("Visitado")
 
         # Depuración: Muestra la información del conocimiento y sensores en la posición actual
         print(f"Conocimiento actualizado en posición actual: {self.conocimiento[self.pos_y][self.pos_x]}")
@@ -49,6 +59,7 @@ class Agente:
         if self.pos_x + 2 < len(self.mapa_original[0]):
             print(f"Conocimiento doble derecha: {self.conocimiento[self.pos_y][self.pos_x + 2]}")
         print(f"Sensores: {self.sensores}")
+        
 
     def teletransportar(self, x, y):
         """

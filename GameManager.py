@@ -1,14 +1,17 @@
 import pygame
+
+from constantes import COLORES_TERRENO, TERRENOS, COSTOS_MOVIMIENTO
 from Mapa import Mapa
 from Agente import Agente
 
 class GameManager:
-    def __init__(self, archivo_mapa, delimitador, cell_size=30, sidebar_width=400):
+    def __init__(self, archivo_mapa, delimitador, cell_size=30, sidebar_width=400, tipo_agente="human"):
         """
         Inicializa el GameManager con el archivo de mapa proporcionado.
         """
         self.cell_size = cell_size
         self.sidebar_width = sidebar_width
+        self.tipo_agente = tipo_agente
 
         # Inicializar el mapa
         self.mapa = Mapa(cell_size)
@@ -17,7 +20,7 @@ class GameManager:
         # Inicializar el agente en la posición (0, 0)
         self.punto_inicio = (0, 0)
         self.punto_fin = None
-        self.agente = Agente(self.punto_inicio[0], self.punto_inicio[1], cell_size, self.mapa.matriz)
+        self.agente = Agente(self.punto_inicio[0], self.punto_inicio[1], cell_size, self.mapa.matriz, tipo_agente)
 
         # Configuración de Pygame
         self.window_width = len(self.mapa.matriz[0]) * cell_size + sidebar_width
@@ -25,21 +28,61 @@ class GameManager:
         self.screen = pygame.display.set_mode((self.window_width, self.window_height))
         pygame.display.set_caption("Gestor de Juego de Agentes")
         self.font = pygame.font.SysFont(None, 24)
-
-        # Colores para los diferentes terrenos
-        self.colores = {
-            0: (128, 128, 128),  # Gris para montaña
-            1: (255, 255, 255),  # Blanco para tierra
-            2: (0, 0, 255),      # Azul para agua
-            3: (255, 255, 0),    # Amarillo para arena
-            4: (0, 255, 0)       # Verde para bosque
-        }
-
+        
         # Variables de control de juego
         self.modo_edicion = False
         self.modo_vista_sensores = False  # Nuevo modo de vista de sensores
         self.modo_seleccion_puntos = False  # Modo para seleccionar puntos de inicio y fin
         self.terreno_seleccionado = 1  # Inicialmente tierra
+
+    def dibujar_mapa(self):
+        """
+        Dibuja el mapa dependiendo del modo de visualización.
+        """
+        if self.modo_vista_sensores:
+
+            """
+            Por hacer: Copiar esa logica para que la matriz de conocimiento recuerde el tipo de terreno que visitó
+            """
+
+            # Mostrar solo las celdas visitadas y las detectadas por los sensores
+            for y, fila in enumerate(self.agente.conocimiento):
+                for x, celda_info in enumerate(fila):
+                    if "Visitado" in celda_info["recorrido"]:
+                        tipo_terreno = TERRENOS[self.mapa.matriz[y][x]]
+                        color = COLORES_TERRENO[tipo_terreno]
+                        pygame.draw.rect(self.screen, color, pygame.Rect(
+                            x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size
+                        ))
+
+            # Mostrar celdas detectadas por los sensores
+            for direccion, valor in self.agente.sensores.items():
+                if valor is not None:
+                    dx, dy = 0, 0
+                    if direccion == 'arriba':
+                        dy = -1
+                    elif direccion == 'abajo':
+                        dy = 1
+                    elif direccion == 'izquierda':
+                        dx = -1
+                    elif direccion == 'derecha':
+                        dx = 1
+                    x_sensor = self.agente.pos_x + dx
+                    y_sensor = self.agente.pos_y + dy
+                    tipo_terreno = TERRENOS[self.mapa.matriz[y_sensor][x_sensor]]
+                    color = COLORES_TERRENO[tipo_terreno]
+                    pygame.draw.rect(self.screen, color, pygame.Rect(
+                        x_sensor * self.cell_size, y_sensor * self.cell_size, self.cell_size, self.cell_size
+                    ))
+        else:
+            # Mostrar el mapa completo (Vista Total)
+            for y, fila in enumerate(self.mapa.matriz):
+                for x, tipo in enumerate(fila):
+                    tipo_terreno = TERRENOS[tipo]
+                    color = COLORES_TERRENO[tipo_terreno]
+                    pygame.draw.rect(self.screen, color, pygame.Rect(
+                        x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size
+                    ))
 
     def ejecutar_juego(self):
         """
@@ -131,48 +174,9 @@ class GameManager:
 
             elif event.button == 3:  # Clic derecho
                 self.punto_fin = (celda_x, celda_y)
-
-    def dibujar_mapa(self):
-        """
-        Dibuja el mapa dependiendo del modo de visualización.
-        """
-        if self.modo_vista_sensores:
-
-            """
-            Por hacer: Copiar esa logica para que la matriz de conocimiento recuerde el tipo de terreno que visitó
-            """
-            
-            # Mostrar solo las celdas visitadas y las detectadas por los sensores
-            for y, fila in enumerate(self.agente.conocimiento):
-                for x, celda_info in enumerate(fila):
-                    if "Visitado" in celda_info["recorrido"]:
-                        color = self.colores[self.mapa.matriz[y][x]]
-                        pygame.draw.rect(self.screen, color, pygame.Rect(
-                            x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size
-                        ))
-
-            # Mostrar celdas detectadas por los sensores
-            for direccion, valor in self.agente.sensores.items():
-                if valor is not None:
-                    # Convertir dirección a coordenadas relativas
-                    dx, dy = 0, 0
-                    if direccion == 'arriba':
-                        dy = -1
-                    elif direccion == 'abajo':
-                        dy = 1
-                    elif direccion == 'izquierda':
-                        dx = -1
-                    elif direccion == 'derecha':
-                        dx = 1
-                    x_sensor = self.agente.pos_x + dx
-                    y_sensor = self.agente.pos_y + dy
-                    color = self.colores[self.mapa.matriz[y_sensor][x_sensor]]
-                    pygame.draw.rect(self.screen, color, pygame.Rect(
-                        x_sensor * self.cell_size, y_sensor * self.cell_size, self.cell_size, self.cell_size
-                    ))
-        else:
-            # Mostrar el mapa completo (Vista Total)
-            self.mapa.dibujar(self.screen, self.colores)
+        elif event.button == 1 and self.boton_guardar.collidepoint(mouse_pos):
+            self.mapa.guardar_mapa("mapa_guardado.csv")
+            print("Mapa guardado correctamente.")
 
     def mostrar_puntos_inicio_fin(self):
         """
@@ -206,10 +210,20 @@ class GameManager:
             f"Terreno seleccionado: {self.terreno_seleccionado}",
             "Teclas: 1 (Tierra), 2 (Agua), 3 (Arena),",
             "4 (Bosque), 0 (Montaña)",
-            "Seleccione inicio y fin con clic en modo 'P'"
+            "Seleccione inicio con clic izquierdo, fin con clic derecho",
+            "Guardar mapa: Haga clic en el botón"
         ]
 
         # Renderizar las instrucciones
         for i, texto in enumerate(instrucciones):
             label = self.font.render(texto, True, (255, 255, 255))
             self.screen.blit(label, (self.screen.get_width() - self.sidebar_width + 10, 10 + i * 20))
+
+        # Botón para guardar el mapa
+        self.boton_guardar = pygame.Rect(self.screen.get_width() - self.sidebar_width + 50, 250, 200, 40)
+        pygame.draw.rect(self.screen, (100, 100, 255), self.boton_guardar)
+
+        # Texto del botón de guardar
+        label_guardar = self.font.render("Guardar Mapa", True, (255, 255, 255))
+        self.screen.blit(label_guardar, (self.boton_guardar.x + 50, self.boton_guardar.y + 10))
+
