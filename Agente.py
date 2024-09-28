@@ -50,6 +50,17 @@ class Agente:
             print(f"Conocimiento doble derecha: {self.conocimiento[self.pos_y][self.pos_x + 2]}")
         print(f"Sensores: {self.sensores}")
 
+    def teletransportar(self, x, y):
+        """
+        Teletransporta el agente a una posición específica.
+        """
+        self.pos_x = x
+        self.pos_y = y
+        # Actualizar sensores y conocimiento al teletransportarse
+        self.sensar()
+        self.conocimiento[self.pos_y][self.pos_x]["visibilidad"] = 1
+        self.conocimiento[self.pos_y][self.pos_x]["recorrido"].add("Visitado")
+
     def dibujar(self, screen):
         """
         Dibuja el agente en la pantalla de Pygame.
