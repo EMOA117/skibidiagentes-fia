@@ -1,9 +1,9 @@
 import pygame
 
-from constantes import COSTOS_MOVIMIENTO, TERRENOS
+from constantes import COSTOS_MOVIMIENTO, TERRENOS, COLORES_AGENTES
 
 class Agente:
-    def __init__(self, pos_x, pos_y, cell_size, mapa_original, tipo_agente="human"):
+    def __init__(self, pos_x, pos_y, cell_size, mapa_original, tipo_agente):
         """
         Inicializa el agente.
         """
@@ -12,6 +12,9 @@ class Agente:
         self.cell_size = cell_size
         self.tipo_agente = tipo_agente
         self.mapa_original = mapa_original
+
+        # Asignar color según el tipo de agente
+        self.color = COLORES_AGENTES.get(tipo_agente, (255, 255, 255))  # Color blanco por defecto si el tipo no está en el diccionario
         
         # Inicializar conocimiento del mapa
         self.conocimiento = [[{"visibilidad": 0, "recorrido": set()} for _ in fila] for fila in mapa_original]
@@ -76,7 +79,7 @@ class Agente:
         """
         Dibuja el agente en la pantalla de Pygame.
         """
-        pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(
+        pygame.draw.rect(screen, self.color, pygame.Rect(
             self.pos_x * self.cell_size, self.pos_y * self.cell_size, 
             self.cell_size, self.cell_size
         ))

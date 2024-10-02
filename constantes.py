@@ -60,4 +60,13 @@ COSTOS_MOVIMIENTO = {
         "swamp": 5,
         "snow": 3
     }
+    
+}
+
+# Colores asociados a cada tipo de agente
+COLORES_AGENTES = {
+    "human": (0, 0, 255),      # Azul
+    "monkey": (255, 165, 0),   # Naranja
+    "octopus": (128, 0, 128),  # Púrpura
+    "sasquatch": (139, 69, 19) # Marrón
 }

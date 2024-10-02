@@ -140,6 +140,20 @@ class GameManager:
         elif event.key == pygame.K_0:
             self.terreno_seleccionado = 0  # Montaña
 
+        # Cambiar el tipo de agente
+        elif event.key == pygame.K_h:  # Cambiar a "human"
+            self.tipo_agente = "human"
+            self.actualizar_agente()
+        elif event.key == pygame.K_m:  # Cambiar a "monkey"
+            self.tipo_agente = "monkey"
+            self.actualizar_agente()
+        elif event.key == pygame.K_o:  # Cambiar a "octopus"
+            self.tipo_agente = "octopus"
+            self.actualizar_agente()
+        elif event.key == pygame.K_s:  # Cambiar a "sasquatch"
+            self.tipo_agente = "sasquatch"
+            self.actualizar_agente()
+
         # Mover agente si no estamos en modo edición
         if not self.modo_edicion:
             if event.key == pygame.K_UP:
@@ -178,6 +192,14 @@ class GameManager:
             self.mapa.guardar_mapa("mapa_guardado.csv")
             print("Mapa guardado correctamente.")
 
+    def actualizar_agente(self):
+        """
+        Actualiza el agente con el nuevo tipo seleccionado.
+        """
+        x, y = self.agente.pos_x, self.agente.pos_y  # Mantener la posición actual
+        self.agente = Agente(x, y, self.cell_size, self.mapa.matriz, self.tipo_agente)
+
+
     def mostrar_puntos_inicio_fin(self):
         """
         Dibuja los puntos de inicio y fin en el mapa.
@@ -210,8 +232,12 @@ class GameManager:
             f"Terreno seleccionado: {self.terreno_seleccionado}",
             "Teclas: 1 (Tierra), 2 (Agua), 3 (Arena),",
             "4 (Bosque), 0 (Montaña)",
-            "Seleccione inicio con clic izquierdo, fin con clic derecho",
-            "Guardar mapa: Haga clic en el botón"
+            "Seleccione inicio con clic izquierdo, ",
+            "fin con clic derecho",
+            "Guardar mapa: Haga clic en el botón",
+            f"Agente seleccionado: {self.tipo_agente} ",
+            "(Presiona 'H' - Human, 'M' - Monkey,", 
+            "'O' - Octopus, 'S' - Sasquatch)"
         ]
 
         # Renderizar las instrucciones
