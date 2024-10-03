@@ -42,11 +42,6 @@ class GameManager:
         Dibuja el mapa dependiendo del modo de visualización.
         """
         if self.modo_vista_sensores:
-
-            """
-            Por hacer: Copiar esa logica para que la matriz de conocimiento recuerde el tipo de terreno que visitó
-            """
-
             # Mostrar solo las celdas visitadas y las detectadas por los sensores
             for y, fila in enumerate(self.agente.conocimiento):
                 for x, celda_info in enumerate(fila):
@@ -56,6 +51,20 @@ class GameManager:
                         pygame.draw.rect(self.screen, color, pygame.Rect(
                             x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size
                         ))
+                        
+                        # Dibujar 'V' en las casillas visitadas
+                        text = self.font.render('V', True, (0, 0, 0))  # Color negro
+                        text_rect = text.get_rect(center=(x * self.cell_size + self.cell_size // 2,
+                                                        y * self.cell_size + self.cell_size // 2))
+                        self.screen.blit(text, text_rect)
+                        
+                    # Verificar si es la posición de inicio
+                    if (x, y) == self.punto_inicio:
+                        # Dibujar 'I' en la posición de inicio
+                        text = self.font.render('I', True, (0, 0, 0))  # Color negro
+                        text_rect = text.get_rect(center=(x * self.cell_size + self.cell_size // 2,
+                                                        y * self.cell_size + self.cell_size // 2))
+                        self.screen.blit(text, text_rect)
 
             # Mostrar celdas detectadas por los sensores
             for direccion, valor in self.agente.sensores.items():
@@ -85,14 +94,31 @@ class GameManager:
                     pygame.draw.rect(self.screen, color, pygame.Rect(
                         x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size
                     ))
+
+                    # Verificar si es la posición de inicio
+                    if (x, y) == self.punto_inicio:
+                        # Dibujar 'I' en la posición de inicio
+                        text = self.font.render('I', True, (0, 0, 0))  # Color negro
+                        text_rect = text.get_rect(center=(x * self.cell_size + self.cell_size // 2,
+                                                        y * self.cell_size + self.cell_size // 2))
+                        self.screen.blit(text, text_rect)
+                    # Verificar si la celda ha sido visitada
+                    elif "Visitado" in self.agente.conocimiento[y][x]["recorrido"]:
+                        # Dibujar 'V' en las casillas visitadas
+                        text = self.font.render('V', True, (0, 0, 0))  # Color negro
+                        text_rect = text.get_rect(center=(x * self.cell_size + self.cell_size // 2,
+                                                        y * self.cell_size + self.cell_size // 2))
+                        self.screen.blit(text, text_rect)
+
         if self.modo_edicion:
-        # Indicar el terreno seleccionado en el mouse para facilitar la edición
+            # Indicar el terreno seleccionado en el mouse para facilitar la edición
             mouse_pos = pygame.mouse.get_pos()
             celda_x, celda_y = self.mapa.detectar_celda(mouse_pos)
             if celda_x is not None and celda_y is not None:
-             pygame.draw.rect(self.screen, (255, 255, 0), pygame.Rect(
-             celda_x * self.cell_size, celda_y * self.cell_size, self.cell_size, self.cell_size
-             ), 2)  # Borde amarillo para la celda seleccionada     
+                pygame.draw.rect(self.screen, (255, 255, 0), pygame.Rect(
+                    celda_x * self.cell_size, celda_y * self.cell_size, self.cell_size, self.cell_size
+                ), 2)  # Borde amarillo para la celda seleccionada
+
 
     def ejecutar_juego(self):
         """

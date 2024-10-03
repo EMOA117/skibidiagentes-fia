@@ -12,6 +12,7 @@ class Agente:
         self.cell_size = cell_size
         self.tipo_agente = tipo_agente
         self.mapa_original = mapa_original
+        self.costo_acumulado = 0
 
         # Asignar color según el tipo de agente
         self.color = COLORES_AGENTES.get(tipo_agente, (255, 255, 255))  # Color blanco por defecto si el tipo no está en el diccionario
@@ -52,6 +53,8 @@ class Agente:
             if costo is not None:  # Si el terreno es transitable para este agente
                 self.pos_x = nueva_x
                 self.pos_y = nueva_y
+                self.costo_acumulado += costo  # Actualiza el costo acumulado
+                self.conocimiento[self.pos_y][self.pos_x]["recorrido"].add(tipo_terreno)  # Agrega el tipo de terreno al recorrido
                 self.sensar()
                 self.conocimiento[self.pos_y][self.pos_x]["visibilidad"] = 1
                 self.conocimiento[self.pos_y][self.pos_x]["recorrido"].add("Visitado")
@@ -62,6 +65,7 @@ class Agente:
         if self.pos_x + 2 < len(self.mapa_original[0]):
             print(f"Conocimiento doble derecha: {self.conocimiento[self.pos_y][self.pos_x + 2]}")
         print(f"Sensores: {self.sensores}")
+        print(f"Costo acumulado: {self.costo_acumulado}")
         
 
     def teletransportar(self, x, y):
