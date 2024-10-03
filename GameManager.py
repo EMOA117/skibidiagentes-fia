@@ -9,6 +9,8 @@ class GameManager:
         """
         Inicializa el GameManager con el archivo de mapa proporcionado.
         """
+        self.TERRENOS_DISPONIBLES = TERRENOS.values()
+        self.TERRENOS = {} 
         self.cell_size = cell_size
         self.sidebar_width = sidebar_width
         self.tipo_agente = tipo_agente
@@ -83,6 +85,14 @@ class GameManager:
                     pygame.draw.rect(self.screen, color, pygame.Rect(
                         x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size
                     ))
+        if self.modo_edicion:
+        # Indicar el terreno seleccionado en el mouse para facilitar la edición
+            mouse_pos = pygame.mouse.get_pos()
+            celda_x, celda_y = self.mapa.detectar_celda(mouse_pos)
+            if celda_x is not None and celda_y is not None:
+             pygame.draw.rect(self.screen, (255, 255, 0), pygame.Rect(
+             celda_x * self.cell_size, celda_y * self.cell_size, self.cell_size, self.cell_size
+             ), 2)  # Borde amarillo para la celda seleccionada     
 
     def ejecutar_juego(self):
         """
@@ -139,6 +149,16 @@ class GameManager:
             self.terreno_seleccionado = 4  # Bosque
         elif event.key == pygame.K_0:
             self.terreno_seleccionado = 0  # Montaña
+        elif event.key == pygame.K_5:
+            self.terreno_seleccionado = 5  # Pantano
+        elif event.key == pygame.K_6:
+            self.terreno_seleccionado = 6  # Nieve
+        elif event.key == pygame.K_7:
+            self.terreno_seleccionado = 7  # Ciudad
+        elif event.key == pygame.K_8:
+            self.terreno_seleccionado = 8  # Pradera
+        elif event.key == pygame.K_9:
+            self.terreno_seleccionado = 9  # Desierto 
 
         # Cambiar el tipo de agente
         elif event.key == pygame.K_h:  # Cambiar a "human"
@@ -188,9 +208,11 @@ class GameManager:
 
             elif event.button == 3:  # Clic derecho
                 self.punto_fin = (celda_x, celda_y)
+        #Guardar mapa
         elif event.button == 1 and self.boton_guardar.collidepoint(mouse_pos):
             self.mapa.guardar_mapa("mapa_guardado.csv")
             print("Mapa guardado correctamente.")
+        
 
     def actualizar_agente(self):
         """
@@ -237,19 +259,37 @@ class GameManager:
             "Guardar mapa: Haga clic en el botón",
             f"Agente seleccionado: {self.tipo_agente} ",
             "(Presiona 'H' - Human, 'M' - Monkey,", 
-            "'O' - Octopus, 'S' - Sasquatch)"
+            "'O' - Octopus, 'S' - Sasquatch)",
+            "Terrenos disponibles:"
         ]
 
         # Renderizar las instrucciones
-        for i, texto in enumerate(instrucciones):
+        y_offset = 10  # Desplazamiento inicial
+        for texto in instrucciones:
             label = self.font.render(texto, True, (255, 255, 255))
-            self.screen.blit(label, (self.screen.get_width() - self.sidebar_width + 10, 10 + i * 20))
+            self.screen.blit(label, (self.screen.get_width() - self.sidebar_width + 10, y_offset))
+            y_offset += 20  # Incrementar para cada línea de instrucciones
 
+        # Añadir un espacio extra antes de mostrar los terrenos
+        y_offset += 20  
+
+        # Mostrar los terrenos dinámicamente
+        if self.TERRENOS:  # Verificar si hay terrenos disponibles
+            for idx, (id_terreno, nombre_terreno) in enumerate(self.TERRENOS.items()):
+                label_terreno = self.font.render(f"{id_terreno}: {nombre_terreno}", True, (255, 255, 255))
+                terreno_y = y_offset + idx * 20
+
+                # Verificar si el terreno está en el área visible del sidebar
+                if 0 <= terreno_y < self.window_height - 30:
+                    self.screen.blit(label_terreno, (self.screen.get_width() - self.sidebar_width + 10, terreno_y))
+
+        # Definir la posición vertical para los botones
+        y_offset = self.screen.get_height() - 60  # Ajusta esta posición según necesites
+        
         # Botón para guardar el mapa
-        self.boton_guardar = pygame.Rect(self.screen.get_width() - self.sidebar_width + 50, 250, 200, 40)
+        self.boton_guardar = pygame.Rect(self.screen.get_width() - self.sidebar_width + 50, y_offset, 150, 30)
         pygame.draw.rect(self.screen, (100, 100, 255), self.boton_guardar)
-
-        # Texto del botón de guardar
         label_guardar = self.font.render("Guardar Mapa", True, (255, 255, 255))
-        self.screen.blit(label_guardar, (self.boton_guardar.x + 50, self.boton_guardar.y + 10))
+        self.screen.blit(label_guardar, (self.boton_guardar.x + 15, self.boton_guardar.y + 5))
 
+    

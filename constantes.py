@@ -8,7 +8,12 @@ COLORES_TERRENO = {
     "sand": (255, 255, 0),  # Amarillo
     "forest": (0, 128, 0),  # Verde oscuro
     "swamp": (128, 0, 128),  # Púrpura
-    "snow": (255, 255, 255)  # Blanco
+    "snow": (255, 255, 255),  # Blanco
+    "city": (255, 165, 0),  # naranja
+    "meadow": (0, 255, 255),  # cyan
+    "desert": (255, 20, 147)  # Deep pink
+    
+    
 }
 
 # Tipos de terreno
@@ -19,7 +24,10 @@ TERRENOS = {
     3: "sand",
     4: "forest",
     5: "swamp",
-    6: "snow"
+    6: "snow",
+    7: "city",
+    8: "meadow",
+    9: "desert"
 }
 
 # Costos de movimiento para diferentes tipos de jugadores
