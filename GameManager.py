@@ -5,7 +5,7 @@ from Mapa import Mapa
 from Agente import Agente
 
 class GameManager:
-    def __init__(self, archivo_mapa, delimitador, cell_size=30, sidebar_width=400, tipo_agente="human"):
+    def __init__(self, archivo_mapa, delimitador, cell_size=30, sidebar_width=600, tipo_agente="human"):
         """
         Inicializa el GameManager con el archivo de mapa proporcionado.
         """
@@ -33,14 +33,21 @@ class GameManager:
         
         # Variables de control de juego
         self.modo_edicion = False
+        self.modo_bus = False
         self.modo_vista_sensores = False  # Nuevo modo de vista de sensores
         self.modo_seleccion_puntos = False  # Modo para seleccionar puntos de inicio y fin
         self.terreno_seleccionado = 1  # Inicialmente tierra
+        self.prioridad_direccion = ""  # Cadena para almacenar la prioridad de dirección
+
 
     def dibujar_mapa(self):
         """
         Dibuja el mapa dependiendo del modo de visualización.
         """
+        # Crear una lista para almacenar las casillas detectadas por los sensores
+        if not hasattr(self, 'casillas_detectadas'):
+            self.casillas_detectadas = set()  # Usar un conjunto para evitar duplicados
+
         if self.modo_vista_sensores:
             # Mostrar solo las celdas visitadas y las detectadas por los sensores
             for y, fila in enumerate(self.agente.conocimiento):
@@ -51,13 +58,13 @@ class GameManager:
                         pygame.draw.rect(self.screen, color, pygame.Rect(
                             x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size
                         ))
-                        
+
                         # Dibujar 'V' en las casillas visitadas
                         text = self.font.render('V', True, (0, 0, 0))  # Color negro
                         text_rect = text.get_rect(center=(x * self.cell_size + self.cell_size // 2,
                                                         y * self.cell_size + self.cell_size // 2))
                         self.screen.blit(text, text_rect)
-                        
+
                     # Verificar si es la posición de inicio
                     if (x, y) == self.punto_inicio:
                         # Dibujar 'I' en la posición de inicio
@@ -66,25 +73,52 @@ class GameManager:
                                                         y * self.cell_size + self.cell_size // 2))
                         self.screen.blit(text, text_rect)
 
-            # Mostrar celdas detectadas por los sensores
-            for direccion, valor in self.agente.sensores.items():
-                if valor is not None:
-                    dx, dy = 0, 0
-                    if direccion == 'arriba':
-                        dy = -1
-                    elif direccion == 'abajo':
-                        dy = 1
-                    elif direccion == 'izquierda':
-                        dx = -1
-                    elif direccion == 'derecha':
-                        dx = 1
-                    x_sensor = self.agente.pos_x + dx
-                    y_sensor = self.agente.pos_y + dy
-                    tipo_terreno = TERRENOS[self.mapa.matriz[y_sensor][x_sensor]]
+            # Mostrar las casillas detectadas por los sensores
+            direcciones = {
+                'arriba': (0, -1),
+                'abajo': (0, 1),
+                'izquierda': (-1, 0),
+                'derecha': (1, 0)
+            }
+            
+            for direccion, (dx, dy) in direcciones.items():
+                x_sensor = self.agente.pos_x + dx
+                y_sensor = self.agente.pos_y + dy
+                
+                if 0 <= x_sensor < len(self.mapa.matriz[0]) and 0 <= y_sensor < len(self.mapa.matriz):
+                    # Almacenar la casilla detectada
+                    self.casillas_detectadas.add((x_sensor, y_sensor))
+                    
+                    # Solo dibujar la celda si no ha sido visitada
+                    if not "Visitado" in self.agente.conocimiento[y_sensor][x_sensor]["recorrido"]:
+                        tipo_terreno = TERRENOS[self.mapa.matriz[y_sensor][x_sensor]]
+                        color = COLORES_TERRENO[tipo_terreno]
+                        pygame.draw.rect(self.screen, color, pygame.Rect(
+                            x_sensor * self.cell_size, y_sensor * self.cell_size, self.cell_size, self.cell_size
+                        ))
+
+                        # Dibujar 'S' en las casillas detectadas por sensores
+                        text = self.font.render('S', True, (0, 0, 0))  # Color negro
+                        text_rect = text.get_rect(center=(x_sensor * self.cell_size + self.cell_size // 2,
+                                                        y_sensor * self.cell_size + self.cell_size // 2))
+                        self.screen.blit(text, text_rect)
+
+            # Dibujar las casillas detectadas anteriormente
+            for (x, y) in self.casillas_detectadas:
+                # Verificar si la celda ha sido visitada
+                if not "Visitado" in self.agente.conocimiento[y][x]["recorrido"]:
+                    tipo_terreno = TERRENOS[self.mapa.matriz[y][x]]
                     color = COLORES_TERRENO[tipo_terreno]
                     pygame.draw.rect(self.screen, color, pygame.Rect(
-                        x_sensor * self.cell_size, y_sensor * self.cell_size, self.cell_size, self.cell_size
+                        x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size
                     ))
+
+                    # Dibujar 'S' en las casillas detectadas anteriormente
+                    text = self.font.render('S', True, (0, 0, 0))  # Color negro
+                    text_rect = text.get_rect(center=(x * self.cell_size + self.cell_size // 2,
+                                                    y * self.cell_size + self.cell_size // 2))
+                    self.screen.blit(text, text_rect)
+
         else:
             # Mostrar el mapa completo (Vista Total)
             for y, fila in enumerate(self.mapa.matriz):
@@ -109,15 +143,6 @@ class GameManager:
                         text_rect = text.get_rect(center=(x * self.cell_size + self.cell_size // 2,
                                                         y * self.cell_size + self.cell_size // 2))
                         self.screen.blit(text, text_rect)
-
-        if self.modo_edicion:
-            # Indicar el terreno seleccionado en el mouse para facilitar la edición
-            mouse_pos = pygame.mouse.get_pos()
-            celda_x, celda_y = self.mapa.detectar_celda(mouse_pos)
-            if celda_x is not None and celda_y is not None:
-                pygame.draw.rect(self.screen, (255, 255, 0), pygame.Rect(
-                    celda_x * self.cell_size, celda_y * self.cell_size, self.cell_size, self.cell_size
-                ), 2)  # Borde amarillo para la celda seleccionada
 
 
     def ejecutar_juego(self):
@@ -163,6 +188,24 @@ class GameManager:
         # Alternar modo selección de puntos de inicio y fin con 'P'
         elif event.key == pygame.K_p:
             self.modo_seleccion_puntos = not self.modo_seleccion_puntos
+        
+        # Agregar teclas a la prioridad de dirección
+        elif event.key in [pygame.K_u, pygame.K_d, pygame.K_r, pygame.K_l]:
+            if event.key == pygame.K_u:
+                self.prioridad_direccion += 'U'
+                print(f"Prioridad de dirección: {self.prioridad_direccion}")
+            elif event.key == pygame.K_d:
+                self.prioridad_direccion += 'D'
+                print(f"Prioridad de dirección: {self.prioridad_direccion}")
+            elif event.key == pygame.K_r:
+                self.prioridad_direccion += 'R'
+                print(f"Prioridad de dirección: {self.prioridad_direccion}")
+            elif event.key == pygame.K_l:
+                self.prioridad_direccion += 'L'
+                print(f"Prioridad de dirección: {self.prioridad_direccion}")
+        elif event.key == pygame.K_c:  
+            self.prioridad_direccion = ""  # Resetea la prioridad
+            print("Prioridad de dirección reseteada.")
 
         # Cambiar terreno seleccionado
         elif event.key == pygame.K_1:
@@ -210,6 +253,18 @@ class GameManager:
                 self.agente.mover(-1, 0)
             elif event.key == pygame.K_RIGHT:
                 self.agente.mover(1, 0)
+
+            if self.prioridad_direccion:
+                # Ejecutar movimiento según la prioridad ingresada
+                for direccion in self.prioridad_direccion:
+                    if direccion == "U":
+                        self.agente.mover(0, -1)
+                    elif direccion == "D":
+                        self.agente.mover(0, 1)
+                    elif direccion == "R":
+                        self.agente.mover(1, 0)
+                    elif direccion == "L":
+                        self.agente.mover(-1, 0)
 
     def manejar_eventos_mouse(self, event):
         """
@@ -275,6 +330,7 @@ class GameManager:
         # Instrucciones para el usuario
         instrucciones = [
             f"Modo Edición: {'ON' if self.modo_edicion else 'OFF'} - Presiona 'E'",
+            f"Modo Edición: {'ON' if self.modo_bus else 'OFF'} - Presiona 'S'",
             f"Modo Vista Sensores: {'ON' if self.modo_vista_sensores else 'OFF'} - Presiona 'V'",
             f"Modo Selección de Puntos: {'ON' if self.modo_seleccion_puntos else 'OFF'} - Presiona 'P'",
             f"Terreno seleccionado: {self.terreno_seleccionado}",
@@ -286,7 +342,12 @@ class GameManager:
             f"Agente seleccionado: {self.tipo_agente} ",
             "(Presiona 'H' - Human, 'M' - Monkey,", 
             "'O' - Octopus, 'S' - Sasquatch)",
-            "Terrenos disponibles:"
+            "Terrenos disponibles:",
+            f"Algoritmo de busqueda:",
+            "(Presiona '7' - BFS, '8' - DFS,", 
+            "'9' - A*)",
+            f"Prioridad {self.prioridad_direccion} ",
+            "(Presiona 'U' - arriba, 'D' - abajo,'R' - derecha, 'L' - izquierda)"
         ]
 
         # Renderizar las instrucciones
