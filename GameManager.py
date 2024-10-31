@@ -5,6 +5,10 @@ from Mapa import Mapa
 from Agente import Agente
 from BFS import bfs_decision_por_decision_con_arbol
 from BFS import bfs_paso_a_paso_con_arbol
+from DFS import dfs_decision_por_decision_con_arbol
+from DFS import dfs_paso_a_paso_con_arbol
+from AStar import astar_paso_a_paso_con_arbol
+from AStar import astar_decision_por_decision_con_arbol
 from anytree import RenderTree
 from time import sleep
 
@@ -27,6 +31,8 @@ class GameManager:
         self.punto_inicio = (0, 0)
         self.punto_fin = None
         self.agente = Agente(self.punto_inicio[0], self.punto_inicio[1], cell_size, self.mapa.matriz, tipo_agente)
+
+        self.algoritmo_seleccionado = 'bfs'
 
         # Configuración de Pygame
         self.window_width = len(self.mapa.matriz[0]) * cell_size + sidebar_width
@@ -184,17 +190,49 @@ class GameManager:
         # Alternar modo edición con 'E'
         if event.key == pygame.K_e:
             self.modo_edicion = not self.modo_edicion
+            print(f"Modo Edición {'activado' if self.modo_edicion else 'desactivado'}.")
 
         # Alternar modo vista de sensores con 'V'
         elif event.key == pygame.K_v:
             self.modo_vista_sensores = not self.modo_vista_sensores
+            print(f"Modo Vista Sensores {'activado' if self.modo_vista_sensores else 'desactivado'}.")
 
         # Alternar modo selección de puntos de inicio y fin con 'P'
         elif event.key == pygame.K_p:
             self.modo_seleccion_puntos = not self.modo_seleccion_puntos
-        
+            print(f"Modo Selección de Puntos {'activado' if self.modo_seleccion_puntos else 'desactivado'}.")
+
+        # Cambiar terreno seleccionado solo si está en modo edición
+        elif self.modo_edicion and event.key in [pygame.K_0, pygame.K_1, pygame.K_2, pygame.K_3, 
+                                                pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7, 
+                                                pygame.K_8, pygame.K_9]:
+            terreno_map = {
+                pygame.K_0: 0,  # Montaña
+                pygame.K_1: 1,  # Tierra
+                pygame.K_2: 2,  # Agua
+                pygame.K_3: 3,  # Arena
+                pygame.K_4: 4,  # Bosque
+                pygame.K_5: 5,  # Pantano
+                pygame.K_6: 6,  # Nieve
+                pygame.K_7: 7,  # Ciudad
+                pygame.K_8: 8,  # Pradera
+                pygame.K_9: 9   # Desierto
+            }
+            self.terreno_seleccionado = terreno_map.get(event.key, self.terreno_seleccionado)
+            print(f"Terreno seleccionado: {self.terreno_seleccionado}.")
+
+        # Cambiar algoritmo de búsqueda solo si NO está en modo edición
+        elif not self.modo_edicion and event.key in [pygame.K_7, pygame.K_8, pygame.K_9]:
+            algoritmo_map = {
+                pygame.K_7: 'bfs',
+                pygame.K_8: 'dfs',
+                pygame.K_9: 'a*'
+            }
+            self.algoritmo_seleccionado = algoritmo_map.get(event.key, self.algoritmo_seleccionado)
+            print(f"Algoritmo de búsqueda seleccionado: {self.algoritmo_seleccionado.upper()}.")
+
         # Agregar teclas a la prioridad de dirección
-        elif event.key in [pygame.K_u, pygame.K_d, pygame.K_r, pygame.K_l]:
+        elif event.key in [pygame.K_u, pygame.K_d, pygame.K_r, pygame.K_l] and self.modo_edicion:
             if event.key == pygame.K_u:
                 self.prioridad_direccion += 'U'
                 print(f"Prioridad de dirección: {self.prioridad_direccion}")
@@ -207,68 +245,41 @@ class GameManager:
             elif event.key == pygame.K_l:
                 self.prioridad_direccion += 'L'
                 print(f"Prioridad de dirección: {self.prioridad_direccion}")
-        elif event.key == pygame.K_c:  
+
+        # Resetear prioridad de dirección con 'C'
+        elif event.key == pygame.K_c and self.modo_edicion:
             self.prioridad_direccion = ""  # Resetea la prioridad
             print("Prioridad de dirección reseteada.")
 
-        # Cambiar terreno seleccionado
-        elif event.key == pygame.K_1:
-            self.terreno_seleccionado = 1  # Tierra
-        elif event.key == pygame.K_2:
-            self.terreno_seleccionado = 2  # Agua
-        elif event.key == pygame.K_3:
-            self.terreno_seleccionado = 3  # Arena
-        elif event.key == pygame.K_4:
-            self.terreno_seleccionado = 4  # Bosque
-        elif event.key == pygame.K_0:
-            self.terreno_seleccionado = 0  # Montaña
-        elif event.key == pygame.K_5:
-            self.terreno_seleccionado = 5  # Pantano
-        elif event.key == pygame.K_6:
-            self.terreno_seleccionado = 6  # Nieve
-        elif event.key == pygame.K_7:
-            self.terreno_seleccionado = 7  # Ciudad
-        elif event.key == pygame.K_8:
-            self.terreno_seleccionado = 8  # Pradera
-        elif event.key == pygame.K_9:
-            self.terreno_seleccionado = 9  # Desierto 
-
         # Cambiar el tipo de agente
-        elif event.key == pygame.K_h:  # Cambiar a "human"
-            self.tipo_agente = "human"
+        elif event.key in [pygame.K_h, pygame.K_m, pygame.K_o, pygame.K_s] and self.modo_edicion:
+            agente_map = {
+                pygame.K_h: "human",
+                pygame.K_m: "monkey",
+                pygame.K_o: "octopus",
+                pygame.K_s: "sasquatch"
+            }
+            self.tipo_agente = agente_map.get(event.key, self.tipo_agente)
             self.actualizar_agente()
-        elif event.key == pygame.K_m:  # Cambiar a "monkey"
-            self.tipo_agente = "monkey"
-            self.actualizar_agente()
-        elif event.key == pygame.K_o:  # Cambiar a "octopus"
-            self.tipo_agente = "octopus"
-            self.actualizar_agente()
-        elif event.key == pygame.K_s:  # Cambiar a "sasquatch"
-            self.tipo_agente = "sasquatch"
-            self.actualizar_agente()
+            print(f"Tipo de agente cambiado a: {self.tipo_agente}.")
 
-        # Mover agente si no estamos en modo edición
-        if not self.modo_edicion:
-            if event.key == pygame.K_UP:
-                self.agente.mover(0, -1)
-            elif event.key == pygame.K_DOWN:
-                self.agente.mover(0, 1)
-            elif event.key == pygame.K_LEFT:
-                self.agente.mover(-1, 0)
-            elif event.key == pygame.K_RIGHT:
-                self.agente.mover(1, 0)
+        # Resolver laberinto en modo paso a paso con 'R' solo si el algoritmo seleccionado es BFS o DFS
+        elif event.key == pygame.K_r:
+            if self.algoritmo_seleccionado in ['bfs', 'dfs', 'a*']:
+                print(f"Tecla 'R' presionada: Resolviendo en modo paso a paso con {self.algoritmo_seleccionado.upper()}...")
+                self.resolver_laberinto(modo='paso_a_paso')
+            else:
+                print("El algoritmo seleccionado no soporta modo paso a paso.")
 
-            # Si presiona la tecla 'R', resolver en modo paso a paso
-        if event.key == pygame.K_r:
-            print("Tecla 'R' presionada: Resolviendo en modo paso a paso...")
-            self.resolver_laberinto(modo='paso_a_paso')
-
-        # Si presiona la tecla 'D', resolver en modo decisión por decisión
+        # Resolver laberinto en modo decisión por decisión con 'D' solo si el algoritmo seleccionado es BFS o DFS
         elif event.key == pygame.K_d:
-            print("Tecla 'D' presionada: Resolviendo en modo decisión por decisión...")
-            self.resolver_laberinto(modo='decision_por_decision')
+            if self.algoritmo_seleccionado in ['bfs', 'dfs', 'a*']:
+                print(f"Tecla 'D' presionada: Resolviendo en modo decisión por decisión con {self.algoritmo_seleccionado.upper()}...")
+                self.resolver_laberinto(modo='decision_por_decision')
+            else:
+                print("El algoritmo seleccionado no soporta modo decisión por decisión.")
 
-        # Si presiona la tecla 'T', mostrar el árbol generado (si ya existe)
+        # Mostrar el árbol generado con 'T'
         elif event.key == pygame.K_t:
             if hasattr(self, 'arbol'):  # Verificar si ya existe un árbol generado
                 print("Tecla 'T' presionada: Mostrando el árbol...")
@@ -277,8 +288,8 @@ class GameManager:
             else:
                 print("No se ha generado ningún árbol todavía.")
 
+            # Ejecutar movimiento según la prioridad ingresada
             if self.prioridad_direccion:
-                # Ejecutar movimiento según la prioridad ingresada
                 for direccion in self.prioridad_direccion:
                     if direccion == "U":
                         self.agente.mover(0, -1)
@@ -288,7 +299,7 @@ class GameManager:
                         self.agente.mover(1, 0)
                     elif direccion == "L":
                         self.agente.mover(-1, 0)
-                        
+
 
     def manejar_eventos_mouse(self, event):
         """
@@ -354,7 +365,7 @@ class GameManager:
         # Instrucciones para el usuario
         instrucciones = [
             f"Modo Edición: {'ON' if self.modo_edicion else 'OFF'} - Presiona 'E'",
-            f"Modo Edición: {'ON' if self.modo_bus else 'OFF'} - Presiona 'S'",
+            # f"Modo Edición: {'ON' if self.modo_bus else 'OFF'} - Presiona 'S'",
             f"Modo Vista Sensores: {'ON' if self.modo_vista_sensores else 'OFF'} - Presiona 'V'",
             f"Modo Selección de Puntos: {'ON' if self.modo_seleccion_puntos else 'OFF'} - Presiona 'P'",
             f"Terreno seleccionado: {self.terreno_seleccionado}",
@@ -367,9 +378,9 @@ class GameManager:
             "(Presiona 'H' - Human, 'M' - Monkey,", 
             "'O' - Octopus, 'S' - Sasquatch)",
             "Terrenos disponibles:",
-            f"Algoritmo de busqueda:",
-            "(Presiona '7' - BFS, '8' - DFS,", 
-            "'9' - A*)",
+            f"Algoritmo seleccionado: {self.algoritmo_seleccionado.upper()}",
+            "Algoritmos disponibles:",
+            "(Presiona '7' - BFS, '8' - DFS, '9' - A*)",
             f"Prioridad {self.prioridad_direccion} ",
             "(Presiona 'U' - arriba, 'D' - abajo,'R' - derecha, 'L' - izquierda)"
         ]
@@ -405,27 +416,36 @@ class GameManager:
 
     def resolver_laberinto(self, modo='paso_a_paso'):
         if self.punto_inicio and self.punto_fin:
-            if modo == 'paso_a_paso':
-                camino, arbol = bfs_paso_a_paso_con_arbol(self.agente ,self.punto_inicio, self.punto_fin, self)
-            elif modo == 'decision_por_decision':
-                camino, arbol = bfs_decision_por_decision_con_arbol(self.agente, self.punto_inicio, self.punto_fin, self)
+            if self.algoritmo_seleccionado == 'bfs':
+                if modo == 'paso_a_paso':
+                    camino, arbol = bfs_paso_a_paso_con_arbol(self.agente, self.punto_inicio, self.punto_fin, self)
+                elif modo == 'decision_por_decision':
+                    camino, arbol = bfs_decision_por_decision_con_arbol(self.agente, self.punto_inicio, self.punto_fin, self)
+            elif self.algoritmo_seleccionado == 'dfs':
+                if modo == 'paso_a_paso':
+                    camino, arbol = dfs_paso_a_paso_con_arbol(self.agente, self.punto_inicio, self.punto_fin, self)
+                elif modo == 'decision_por_decision':
+                    camino, arbol = dfs_decision_por_decision_con_arbol(self.agente, self.punto_inicio, self.punto_fin, self)
+            elif self.algoritmo_seleccionado == 'a*':
+                if modo == 'paso_a_paso':
+                    camino, arbol = astar_paso_a_paso_con_arbol(self.agente, self.punto_inicio, self.punto_fin, self)
+                elif modo == 'decision_por_decision':
+                    camino, arbol = astar_decision_por_decision_con_arbol(self.agente, self.punto_inicio, self.punto_fin, self)
+            # Puedes agregar más algoritmos aquí en el futuro
 
             if camino:
                 print("Camino encontrado:", camino)
-                self.arbol = arbol  # Guardar el árbol generado
+                self.arbol = arbol
                 print("Árbol de decisiones generado:")
                 for pre, _, node in RenderTree(arbol):
                     print(f"{pre}{node.name}")
-
                 # Mover al agente paso a paso
                 for paso in camino:
                     x, y = paso
-                    self.agente.teletransportar(x, y)  # Mover el agente a la siguiente posición
-                    self.dibujar_mapa()  # Actualizar el mapa
+                    self.agente.teletransportar(x, y)
+                    self.dibujar_mapa()
                     self.agente.dibujar(self.screen)
-                    pygame.display.flip()  # Refrescar pantalla
-                    #sleep(0.5)  # Pausa entre movimientos para visualizar el avance
-
+                    pygame.display.flip()
+                    # sleep(0.5)
             else:
                 print("No se encontró ningún camino")
-    
