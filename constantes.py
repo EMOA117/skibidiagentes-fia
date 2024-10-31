@@ -2,7 +2,7 @@
 
 # Colores de los terrenos
 COLORES_TERRENO = {
-    "mountain": (0, 0, 0),  # Negro
+    "mountain": (215, 215, 215),  # Negro
     "earth": (255, 228, 181),  # Tierra (naranja claro)
     "water": (0, 0, 255),  # Azul
     "sand": (255, 255, 0),  # Amarillo
