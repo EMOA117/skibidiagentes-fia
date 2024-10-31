@@ -3,6 +3,10 @@ import pygame
 from constantes import COLORES_TERRENO, TERRENOS, COSTOS_MOVIMIENTO
 from Mapa import Mapa
 from Agente import Agente
+from BFS import bfs_decision_por_decision_con_arbol
+from BFS import bfs_paso_a_paso_con_arbol
+from anytree import RenderTree
+from time import sleep
 
 class GameManager:
     def __init__(self, archivo_mapa, delimitador, cell_size=30, sidebar_width=600, tipo_agente="human"):
@@ -254,6 +258,25 @@ class GameManager:
             elif event.key == pygame.K_RIGHT:
                 self.agente.mover(1, 0)
 
+            # Si presiona la tecla 'R', resolver en modo paso a paso
+        if event.key == pygame.K_r:
+            print("Tecla 'R' presionada: Resolviendo en modo paso a paso...")
+            self.resolver_laberinto(modo='paso_a_paso')
+
+        # Si presiona la tecla 'D', resolver en modo decisión por decisión
+        elif event.key == pygame.K_d:
+            print("Tecla 'D' presionada: Resolviendo en modo decisión por decisión...")
+            self.resolver_laberinto(modo='decision_por_decision')
+
+        # Si presiona la tecla 'T', mostrar el árbol generado (si ya existe)
+        elif event.key == pygame.K_t:
+            if hasattr(self, 'arbol'):  # Verificar si ya existe un árbol generado
+                print("Tecla 'T' presionada: Mostrando el árbol...")
+                for pre, fill, node in RenderTree(self.arbol):
+                    print(f"{pre}{node.name}")
+            else:
+                print("No se ha generado ningún árbol todavía.")
+
             if self.prioridad_direccion:
                 # Ejecutar movimiento según la prioridad ingresada
                 for direccion in self.prioridad_direccion:
@@ -265,6 +288,7 @@ class GameManager:
                         self.agente.mover(1, 0)
                     elif direccion == "L":
                         self.agente.mover(-1, 0)
+                        
 
     def manejar_eventos_mouse(self, event):
         """
@@ -379,4 +403,29 @@ class GameManager:
         label_guardar = self.font.render("Guardar Mapa", True, (255, 255, 255))
         self.screen.blit(label_guardar, (self.boton_guardar.x + 15, self.boton_guardar.y + 5))
 
+    def resolver_laberinto(self, modo='paso_a_paso'):
+        if self.punto_inicio and self.punto_fin:
+            if modo == 'paso_a_paso':
+                camino, arbol = bfs_paso_a_paso_con_arbol(self.agente ,self.punto_inicio, self.punto_fin, self)
+            elif modo == 'decision_por_decision':
+                camino, arbol = bfs_decision_por_decision_con_arbol(self.agente, self.punto_inicio, self.punto_fin, self)
+
+            if camino:
+                print("Camino encontrado:", camino)
+                self.arbol = arbol  # Guardar el árbol generado
+                print("Árbol de decisiones generado:")
+                for pre, _, node in RenderTree(arbol):
+                    print(f"{pre}{node.name}")
+
+                # Mover al agente paso a paso
+                for paso in camino:
+                    x, y = paso
+                    self.agente.teletransportar(x, y)  # Mover el agente a la siguiente posición
+                    self.dibujar_mapa()  # Actualizar el mapa
+                    self.agente.dibujar(self.screen)
+                    pygame.display.flip()  # Refrescar pantalla
+                    #sleep(0.5)  # Pausa entre movimientos para visualizar el avance
+
+            else:
+                print("No se encontró ningún camino")
     
